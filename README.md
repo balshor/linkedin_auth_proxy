@@ -1,14 +1,12 @@
-google_auth_proxy
-=================
+linkedin_auth_proxy
+===================
 
+A reverse proxy that provides authentication using LinkedIn OAuth2 to validate 
+individual accounts, or a whole email domain.
 
-A reverse proxy that provides authentication using Google OAuth2 to validate 
-individual accounts, or a whole google apps domain.
+This project was forked from the [bitly google_auth_proxy](http://github.com/bitly/google_auth_proxy) as a hackday (InDay) project.
+The below documentation has not been updated from the original project.
 
-[![Build Status](https://secure.travis-ci.org/bitly/google_auth_proxy.png?branch=master)](http://travis-ci.org/bitly/google_auth_proxy)
-
-
-![sign_in_page](https://cloud.githubusercontent.com/assets/45028/4970624/7feb7dd8-6886-11e4-93e0-c9904af44ea8.png)
 
 ## Architecture
 
