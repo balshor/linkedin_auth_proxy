@@ -31,6 +31,7 @@ func NewValidator(domains []string, usersFile string) func(string) bool {
 		valid := false
 		for _, domain := range domains {
 			emailSuffix := fmt.Sprintf("@%s", domain)
+                        log.Printf("Checking %d character emailSuffix '%s' against %d character email %s", len(emailSuffix), emailSuffix, len(email), email)
 			valid = valid || strings.HasSuffix(email, emailSuffix)
 		}
 		if !valid {

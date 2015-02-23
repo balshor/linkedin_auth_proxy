@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -47,8 +48,8 @@ type OauthProxy struct {
 }
 
 func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
-	login, _ := url.Parse("https://accounts.google.com/o/oauth2/auth")
-	redeem, _ := url.Parse("https://accounts.google.com/o/oauth2/token")
+	login, _ := url.Parse("https://www.linkedin.com/uas/oauth2/authorization")
+	redeem, _ := url.Parse("https://www.linkedin.com/uas/oauth2/accessToken")
 	serveMux := http.NewServeMux()
 	for _, u := range opts.proxyUrls {
 		path := u.Path
@@ -80,7 +81,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 
 		clientID:           opts.ClientID,
 		clientSecret:       opts.ClientSecret,
-		oauthScope:         "profile email",
+		oauthScope:         "r_emailaddress r_basicprofile",
 		oauthRedemptionUrl: redeem,
 		oauthLoginUrl:      login,
 		serveMux:           serveMux,
@@ -156,28 +157,60 @@ func (p *OauthProxy) redeemCode(code string) (string, string, error) {
 		return "", "", err
 	}
 
-	idToken, err := json.Get("id_token").String()
-	if err != nil {
-		return "", "", err
-	}
-
-	// id_token is a base64 encode ID token payload
-	// https://developers.google.com/accounts/docs/OAuth2Login#obtainuserinfo
-	jwt := strings.Split(idToken, ".")
-	b, err := jwtDecodeSegment(jwt[1])
-	if err != nil {
-		return "", "", err
-	}
-	data, err := simplejson.NewJson(b)
-	if err != nil {
-		return "", "", err
-	}
-	email, err := data.Get("email").String()
-	if err != nil {
-		return "", "", err
-	}
-
+        email, err := retrieveEmail(access_token)
 	return access_token, email, nil
+}
+
+type EmailResponse struct {
+     XmlName xml.Name `xml:"email-address"`
+     Email string `xml:",chardata"`
+}
+
+func retrieveEmail(access_token string) (string, error) {
+        if access_token == "" {
+                return "", errors.New("missing access token")
+        }
+        params := url.Values{}
+        req, err := http.NewRequest("GET", "https://api.linkedin.com/v1/people/~/email-address", bytes.NewBufferString(params.Encode()))
+        if err != nil {
+	   log.Printf("failed building request %s", err.Error())
+           return "", err
+        }
+        req.Header.Set("Accept", "application/xml, text/xml")
+        req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+
+	httpclient := &http.Client{}
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		return "", err
+        }
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != 200 {
+		log.Printf("got response code %d - %s", resp.StatusCode, body)
+		return "", errors.New("api request returned non 200 status code")
+	}
+
+	emailResponse := new(EmailResponse)
+	err = xml.Unmarshal(body, &emailResponse)
+	if err != nil {
+           return "", err
+	}
+	email := emailResponse.Email
+
+	if email == "" {
+	   log.Printf("No email address unmarshalled from %s", string(body))
+	   return "", errors.New("No email address retrieved.")
+	}
+        log.Printf("Retrieve email body: %s", email)
+        if err != nil {
+                return "", err
+        }
+
+        return email, nil
 }
 
 func jwtDecodeSegment(seg string) ([]byte, error) {

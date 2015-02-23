@@ -16,9 +16,9 @@ import (
 )
 
 func main() {
-	flagSet := flag.NewFlagSet("google_auth_proxy", flag.ExitOnError)
+	flagSet := flag.NewFlagSet("linkedin_auth_proxy", flag.ExitOnError)
 
-	googleAppsDomains := StringArray{}
+	emailDomains := StringArray{}
 	upstreams := StringArray{}
 	skipAuthRegex := StringArray{}
 
@@ -31,9 +31,9 @@ func main() {
 	flagSet.Bool("pass-basic-auth", true, "pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream")
 	flagSet.Var(&skipAuthRegex, "skip-auth-regex", "bypass authentication for requests path's that match (may be given multiple times)")
 
-	flagSet.Var(&googleAppsDomains, "google-apps-domain", "authenticate against the given Google apps domain (may be given multiple times)")
-	flagSet.String("client-id", "", "the Google OAuth Client ID: ie: \"123456.apps.googleusercontent.com\"")
-	flagSet.String("client-secret", "", "the OAuth Client Secret")
+	flagSet.Var(&emailDomains, "email-domain", "authenticate against the given email domains (may be given multiple times)")
+	flagSet.String("client-id", "", "the OAuth Client ID, provided by LinkedIn")
+	flagSet.String("client-secret", "", "the OAuth Client Secret, provided by LinkedIn")
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
 	flagSet.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption")
 	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
@@ -47,7 +47,7 @@ func main() {
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
-		fmt.Printf("google_auth_proxy v%s\n", VERSION)
+		fmt.Printf("linkedin_auth_proxy v%s\n", VERSION)
 		return
 	}
 
@@ -69,14 +69,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	validator := NewValidator(opts.GoogleAppsDomains, opts.AuthenticatedEmailsFile)
+	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
 	oauthproxy := NewOauthProxy(opts, validator)
 
-	if len(opts.GoogleAppsDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if len(opts.GoogleAppsDomains) > 1 {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.GoogleAppsDomains, ", "))
+	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
+		if len(opts.EmailDomains) > 1 {
+			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.EmailDomains, ", "))
 		} else {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.GoogleAppsDomains[0])
+			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
 		}
 	}
 

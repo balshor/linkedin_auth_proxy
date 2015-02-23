@@ -102,7 +102,7 @@ func getTemplates() *template.Template {
 	{{ if .SignInMessage }}
 	<p>{{.SignInMessage}}</p>
 	{{ end}}
-	<button type="submit" class="btn">Sign in with a Google Account</button><br/>
+	<button type="submit" class="btn">Sign in with a LinkedIn Account</button><br/>
 	</form>
 	</div>
 
