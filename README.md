@@ -2,8 +2,8 @@ google_auth_proxy
 =================
 
 
-A reverse proxy that provides authentication using Google OAuth2 to validate 
-individual accounts, or a whole google apps domain.
+A reverse proxy that provides authentication using Google and other OAuth2
+providers to validate individual accounts, or a whole google apps domain.
 
 [![Build Status](https://secure.travis-ci.org/bitly/google_auth_proxy.png?branch=master)](http://travis-ci.org/bitly/google_auth_proxy)
 
@@ -31,8 +31,10 @@ individual accounts, or a whole google apps domain.
 
 ## OAuth Configuration
 
-You will need to register an OAuth application with google, and configure it with Redirect URI(s) for the domain you
-intend to run `google_auth_proxy` on.
+You will need to register an OAuth application with Google (or [another
+provider](#providers)), and configure it with Redirect URI(s) for the domain
+you intend to run `google_auth_proxy` on. For Google, the registration steps
+are:
 
 1. Create a new project: https://console.developers.google.com/project
 2. Under "APIs & Auth", choose "Credentials"
@@ -64,15 +66,25 @@ Usage of google_auth_proxy:
   -config="": path to config file
   -cookie-domain="": an optional cookie domain to force cookies to (ie: .yourcompany.com)*
   -cookie-expire=168h0m0s: expire timeframe for cookie
-  -cookie-httponly=true: set HttpOnly cookie
-  -cookie-https-only=true: set HTTPS only cookie
+  -cookie-httponly=true: set HttpOnly cookie flag
+  -cookie-https-only=true: set secure (HTTPS) cookies (deprecated. use --cookie-secure setting)
   -cookie-secret="": the seed string for secure cookies
+  -cookie-secure=true: set secure (HTTPS) cookie flag
+  -custom-templates-dir="": path to custom html templates
   -display-htpasswd-form=true: display username / password login form if an htpasswd file is provided
   -google-apps-domain=: authenticate against the given Google apps domain (may be given multiple times)
   -htpasswd-file="": additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
   -http-address="127.0.0.1:4180": [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients
+  -login-url="": Authentication endpoint
+  -pass-access-token=false: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
   -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
+  -pass-host-header=true: pass the request Host Header to upstream
+  -profile-url="": Profile access endpoint
+  -provider="": Oauth provider (defaults to Google)
+  -redeem-url="": Token redemption endpoint
   -redirect-url="": the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
+  -request-logging=true: Log requests to stdout
+  -scope="": Oauth scope specification
   -skip-auth-regex=: bypass authentication for requests path's that match (may be given multiple times)
   -upstream=: the http url(s) of the upstream endpoint. If multiple, routing is based on path
   -version=false: print version string
@@ -115,11 +127,10 @@ The command line to run `google_auth_proxy` would look like this:
 
 ```bash
 ./google_auth_proxy \
-   --redirect-url="https://internal.yourcompany.com/oauth2/callback"  \
    --google-apps-domain="yourcompany.com"  \
    --upstream=http://127.0.0.1:8080/ \
    --cookie-secret=... \
-   --cookie-https-only=true \
+   --cookie-secure=true \
    --client-id=... \
    --client-secret=...
 ```
@@ -132,4 +143,27 @@ Google Auth Proxy responds directly to the following endpoints. All other endpoi
 * /ping - returns an 200 OK response
 * /oauth2/sign_in - the login page, which also doubles as a sign out page (it clears cookies)
 * /oauth2/start - a URL that will redirect to start the OAuth cycle
-* /oauth2/callback - the URL used at the end of the OAuth cycle
+* /oauth2/callback - the URL used at the end of the OAuth cycle. The oauth app will be configured with this ass the callback url.
+
+## Logging Format
+
+Google Auth Proxy logs requests to stdout in a format similar to Apache Combined Log.
+
+```
+<REMOTE_ADDRESS> - <user@domain.com> [19/Mar/2015:17:20:19 -0400] <HOST_HEADER> GET <UPSTREAM_HOST> "/path/" HTTP/1.1 "<USER_AGENT>" <RESPONSE_CODE> <RESPONSE_BYTES> <REQUEST_DURATION>
+```
+
+## <a name="providers"></a>Providers other than Google
+
+Other providers besides Google can be specified by the `providers` flag/config
+directive. Right now this includes:
+
+* `myusa` - The [MyUSA](https://alpha.my.usa.gov) authentication service
+  ([GitHub](https://github.com/18F/myusa))
+
+## Adding a new Provider
+
+Follow the examples in the [`providers` package](providers/) to define a new
+`Provider` instance. Add a new `case` to
+[`providers.New()`](providers/providers.go) to allow the auth proxy to use the
+new `Provider`.

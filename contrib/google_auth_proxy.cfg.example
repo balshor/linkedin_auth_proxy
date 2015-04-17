@@ -5,6 +5,7 @@
 # http_address = "127.0.0.1:4180"
 
 ## the OAuth Redirect URL.
+# defaults to the "https://" + requested host header + "/oauth2/callback"
 # redirect_url = "https://internalapp.yourcompany.com/oauth2/callback"
 
 ## the http url(s) of the upstream endpoint. If multiple, routing is based on path
@@ -12,8 +13,14 @@
 #     "http://127.0.0.1:8080/"
 # ]
 
+## Log requests to stdout
+# request_logging = true
+
 ## pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
 # pass_basic_auth = true
+## pass the request Host Header to upstream
+## when disabled the upstream Host is used as the Host Header
+# pass_host_header = true 
 
 ## Google Apps Domains to allow authentication for
 # google_apps_domains = [
@@ -33,6 +40,10 @@
 ## enabling exposes a username/login signin form
 # htpasswd_file = ""
 
+## Templates
+## optional directory with custom sign_in.html and error.html
+# custom_templates_dir = ""
+
 
 ## Cookie Settings
 ## Secret - the seed string for secure cookies
@@ -41,5 +52,6 @@
 # cookie_secret = ""
 # cookie_domain = ""
 # cookie_expire = "168h"
-# cookie_https_only = true
+# cookie_secure = true
 # cookie_httponly = true
+
